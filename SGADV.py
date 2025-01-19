@@ -15,6 +15,8 @@ import pytorch_ssim
 import lpips
 from torchvision.utils import save_image
 from scipy.io import savemat
+from skimage.metrics import structural_similarity as ssim
+import numpy as np
 
 def main() -> None:
     # Settings
@@ -99,11 +101,12 @@ def main() -> None:
     del noise
     
     # Compute SSIM
-    ssim_loss = pytorch_ssim.SSIM()
-    ssim_score = ssim_loss(attack_images.raw.cpu(),raw_advs.cpu())
+    attack_images_np = attack_images.raw.cpu().numpy().transpose(0, 2, 3, 1)
+    raw_advs_np = raw_advs.cpu().numpy().transpose(0, 2, 3, 1)
+    ssim_scores = [ssim(attack_images_np[i], raw_advs_np[i], multichannel=True) for i in range(attack_images_np.shape[0])]
+    ssim_score = np.mean(ssim_scores)
     print(f"SSIM = {ssim_score}")
     f.write(f"SSIM = {ssim_score}\n")
-    del ssim_loss, ssim_score
     
     # Compute LPIPS
     loss_fn = lpips.LPIPS(net='alex')
