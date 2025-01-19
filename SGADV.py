@@ -7,11 +7,10 @@ from math import ceil
 from torch import Tensor
 from scipy.io import loadmat
 from facenet_pytorch import InceptionResnetV1
-# from insightface import iresnet100
+from insightface import iresnet100
 import foolbox.attacks as attacks
 from foolbox.models import PyTorchModel
 from foolbox.utils import samples, FMR, cos_similarity_score
-import pytorch_ssim
 import lpips
 from torchvision.utils import save_image
 from scipy.io import savemat
