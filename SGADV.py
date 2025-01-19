@@ -103,7 +103,7 @@ def main() -> None:
     # Compute SSIM
     attack_images_np = attack_images.raw.cpu().numpy().transpose(0, 2, 3, 1)
     raw_advs_np = raw_advs.cpu().numpy().transpose(0, 2, 3, 1)
-    ssim_scores = [ssim(attack_images_np[i], raw_advs_np[i], multichannel=True) for i in range(attack_images_np.shape[0])]
+    ssim_scores = [ssim(attack_images_np[i], raw_advs_np[i], win_size=7, channel_axis=-1) for i in range(attack_images_np.shape[0])]
     ssim_score = np.mean(ssim_scores)
     print(f"SSIM = {ssim_score}")
     f.write(f"SSIM = {ssim_score}\n")
