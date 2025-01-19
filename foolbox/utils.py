@@ -212,7 +212,7 @@ def FMR(
     
     print("    Generating score: advs vd renew...")
     imposter_score_renew = Tensor([]).to(device)
-    totalsize = np.int(targets.shape[0])
+    totalsize = int(targets.shape[0])
     for i in range(samplesize):
         index_i = list(range(0+i,totalsize,samplesize))
         for j in range(samplesize): 
