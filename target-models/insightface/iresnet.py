@@ -1,26 +1,30 @@
 import torch
 from torch import nn
+from torch.hub import load_state_dict_from_url
 import os
 import gdown
 
 __all__ = ['iresnet34', 'iresnet50', 'iresnet100']
 
-model_urls = {
-    'iresnet34': os.path.join(os.path.dirname(__file__), 'iresnet34-5b0d0e90.pth'),
-    'iresnet50': os.path.join(os.path.dirname(__file__), 'iresnet50-7f187506.pth'),
-    'iresnet100': os.path.join(os.path.dirname(__file__), 'iresnet100-73e07ba7.pth')
-}
-
 def download_weights():
     urls = {
-        'iresnet34': 'https://drive.google.com/uc?id=1k1YJop0WAv8udpmFhc-yQ4uJmZ3ocdAQ',
-        'iresnet50': 'https://drive.google.com/uc?id=177LVq8XDt6_hF0ia-Ku2fqLZ68V04dW8',
-        'iresnet100': 'https://drive.google.com/uc?id=1bfb8JR50cv4l9vVdv-iWJpTVcbEAZ9SZ'
+        'iresnet34': 'https://drive.google.com/uc?id=YOUR_FILE_ID_34',
+        'iresnet50': 'https://drive.google.com/uc?id=YOUR_FILE_ID_50',
+        'iresnet100': 'https://drive.google.com/uc?id=YOUR_FILE_ID_100'
     }
     for model_name, url in urls.items():
         if not os.path.exists(model_urls[model_name]):
             print(f"Downloading {model_name} weights...")
             gdown.download(url, model_urls[model_name], quiet=False)
+
+download_weights()
+
+model_urls = {
+    'iresnet34': './iresnet34-5b0d0e90.pth',
+    'iresnet50': './iresnet50-7f187506.pth',
+    'iresnet100': './iresnet100-73e07ba7.pth'
+}
+
 
 def conv3x3(in_planes, out_planes, stride=1, groups=1, dilation=1):
     """3x3 convolution with padding"""
@@ -163,7 +167,6 @@ class IResNet(nn.Module):
 def _iresnet(arch, block, layers, pretrained, progress, **kwargs):
     model = IResNet(block, layers, **kwargs)
     if pretrained:
-        download_weights()
         state_dict = torch.load(model_urls[arch], map_location=torch.device('cpu'))
         model.load_state_dict(state_dict)
     return model
