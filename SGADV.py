@@ -25,7 +25,7 @@ def main() -> None:
     source = "lfw" # lfw, CelebA-HQ
     target = "CelebA-HQ" # lfw, CelebA-HQ
     dfr_model = 'insightface' # facenet, insightface
-    threshold = 0.7032619898135847 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
+    threshold = 0.5854403972629942 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
     attack_model = attacks.LinfPGD
     loss_type = 'ST' #'ST', 'C-BCE'
     epsilons = 0.03
