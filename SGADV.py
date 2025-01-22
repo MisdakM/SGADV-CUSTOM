@@ -24,7 +24,7 @@ def main() -> None:
     foldersize = int(samplesize*subject/2)
     source = "lfw" # lfw, CelebA-HQ
     target = "CelebA-HQ" # lfw, CelebA-HQ
-    dfr_model = 'facenet' # facenet, insightface
+    dfr_model = 'insightface' # facenet, insightface
     threshold = 0.7032619898135847 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
     attack_model = attacks.LinfPGD
     loss_type = 'ST' #'ST', 'C-BCE'
@@ -45,8 +45,8 @@ def main() -> None:
     
     # Model
     if dfr_model=='insightface':
-        print("Unsupported model")
-        # model = iresnet100(pretrained=True).eval()
+        # print("Unsupported model")
+        model = iresnet100(pretrained=True).eval()
     elif dfr_model=='facenet':
         model = InceptionResnetV1(pretrained='vggface2').eval()
     mean=[0.5]*3
@@ -77,13 +77,17 @@ def main() -> None:
         start = i*batchsize
         if i == ceil(totalsize/batchsize)-1:
             batchsize = totalsize - batchsize*i
+
         start_time = time.time()
         raw_advs_tmp, _, _ = attack(fmodel, attack_images[start:start+batchsize], target_features[start:start+batchsize], epsilons=epsilons)
         end_time = time.time()
+        
         time_cost = time_cost + end_time - start_time
+        
         advs_features_tmp = fmodel(raw_advs_tmp)
         raw_advs = torch.cat((raw_advs, raw_advs_tmp.raw),0)
         advs_features = torch.cat((advs_features, advs_features_tmp.raw),0)
+        
         del raw_advs_tmp, advs_features_tmp
     del attack, fmodel, model
     print(f"Attack costs {time_cost}s")
