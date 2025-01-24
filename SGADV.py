@@ -43,12 +43,12 @@ def main() -> None:
     f.write(f"samplesize = {samplesize}, subject = {subject}, source = {source}, target = {target}, dfr_model = {dfr_model}, threshold = {threshold}\n")
     f.write(f"attack_model = {attack_model}, loss_type = {loss_type}, epsilons = {epsilons}, steps = {steps}, step_size = {step_size}, convergence_threshold = {convergence_threshold}, batchsize = {batchsize}\n")
     
-    # Model
+    # Target Model
     if dfr_model=='insightface':
-        # print("Unsupported model")
         model = iresnet100(pretrained=True).eval()
     elif dfr_model=='facenet':
         model = InceptionResnetV1(pretrained='vggface2').eval()
+
     mean=[0.5]*3
     std=[0.5]*3
     preprocessing = dict(mean = mean, std = std, axis=-3)
@@ -121,7 +121,7 @@ def main() -> None:
     f.write(f"LPISP = {lpips_score}\n")
     del attack_images, raw_advs, loss_fn
     
-    #Compute dissimilarity
+    # Compute dissimilarity - helps to tell how different the adversarial examples are from the target templates
     dissimilarity = 1-cos_similarity_score(advs_features,target_features).mean()
     print(f"Dissimilarity = {dissimilarity}")
     f.write(f"Dissimilarity = {dissimilarity}\n")
