@@ -29,7 +29,7 @@ def main() -> None:
     threshold = 0.7032619898135847 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
     loss_type = 'ST' #'ST', 'C-BCE'
     epsilons = 0.03
-    steps = 1000
+    steps = 3
     step_size = 0.001
     convergence_threshold = 0.0001
 
@@ -40,8 +40,8 @@ def main() -> None:
     attack_model = attacks.LinfPGD # dummy attack model, for keeping logs intact
 
     # Initialize the ATN model
-    input_size = 3 * 112 * 112  # Assuming input images are 112x112 with 3 channels
-    atn_model = attacks.SimpleATN(input_size=input_size).to(device)
+    input_size = 3 * 250 * 250  # Assuming input images are 112x112 with 3 channels
+    atn_model = attacks.SimpleAutoencoder(input_size=input_size, hidden_size=10).to(device)
     optimizer = torch.optim.Adam(atn_model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()  # Use MSE loss for simplicity
     
@@ -87,22 +87,32 @@ def main() -> None:
         if i == ceil(totalsize / batchsize) - 1:
             batchsize = totalsize - batchsize * i
 
-        batch_images = attack_images[start:start + batchsize].raw.view(batchsize, -1).to(device)
+        batch_images = attack_images[start:start + batchsize].raw.reshape(batchsize, -1).to(device)
         batch_targets = target_features[start:start + batchsize].to(device)
 
+        print("-"*50)
+        print(batch_images.shape)
+        print(batch_targets.shape)
+        print("-"*50)
+        
         start_time = time.time()
         
         # Train the ATN
         atn_model.train()
         for _ in range(steps):  # Train for a few iterations
             optimizer.zero_grad()
+            print(f'before {batch_images.shape}')
+
             perturbations = atn_model(batch_images)  # Generate perturbations
             advs = batch_images + perturbations  # Add perturbations
             advs = torch.clamp(advs, 0, 1)  # Ensure valid image values
 
             # Calculate loss based on target features
-            advs_features = fmodel(advs.view(batchsize, 3, 112, 112))  # Reshape back to image format
-            loss = criterion(advs_features.raw, batch_targets)
+            advs_features = fmodel(advs.view(batchsize, 3, 250, 250))  # Reshape back to image format
+            loss = criterion(advs_features, batch_targets)
+
+            print(f'loss: {loss.item()}')
+
             loss.backward()
             optimizer.step()
         
@@ -114,30 +124,34 @@ def main() -> None:
         with torch.no_grad():
             perturbations = atn_model(batch_images)
             advs = torch.clamp(batch_images + perturbations, 0, 1)
-            advs_features_tmp = fmodel(advs.view(batchsize, 3, 112, 112))  # Reshape to image format
+            advs_features_tmp = fmodel(advs.view(batchsize, 3, 250, 250))  # Reshape to image format
 
         raw_advs = torch.cat((raw_advs, advs), 0)
-        advs_features = torch.cat((advs_features, advs_features_tmp.raw), 0)
+        advs_features = torch.cat((advs_features, advs_features_tmp), 0)
 
         del advs_features_tmp
 
     
-    del attack, fmodel, model
+    del fmodel, model
     print(f"Attack costs {time_cost}s")
     f.write(f"Attack costs {time_cost}s\n")
     
     # Save advs template
-    adv_template = advs_features.cpu().numpy()
+    adv_template = advs_features.detach().cpu().numpy()
     savemat(f'mat/{loss_type}_{source}_{target}_{dfr_model}_templates.mat', mdict={f"{loss_type}_{source}_{target}_{dfr_model}_templates": adv_template})
     
     # Save advs
-    save_image(raw_advs[10], f'results/images/{loss_type}_{source}_{target}_{dfr_model}_{log_time}_adv.jpg')
-    noise = (raw_advs[10]-attack_images[10].raw+bounds[1]-bounds[0])/((bounds[1]-bounds[0])*2)
-    save_image(noise, f'results/images/{loss_type}_{source}_{target}_{dfr_model}_{log_time}_noise.jpg')
-    del noise
+    # save_image(raw_advs[10], f'results/images/{loss_type}_{source}_{target}_{dfr_model}_{log_time}_adv.jpg')
+    # noise = (raw_advs[10]-attack_images[10].raw+bounds[1]-bounds[0])/((bounds[1]-bounds[0])*2)
+    # save_image(noise, f'results/images/{loss_type}_{source}_{target}_{dfr_model}_{log_time}_noise.jpg')
+    # del noise
     
     # Compute SSIM
     attack_images_np = attack_images.raw.cpu().numpy().transpose(0, 2, 3, 1)
+    
+    print(f"attack_images_np shape: {attack_images_np.shape}")
+    print(f"raw_advs_np shape: {raw_advs.cpu().numpy().shape}")
+
     raw_advs_np = raw_advs.cpu().numpy().transpose(0, 2, 3, 1)
     ssim_scores = [ssim(attack_images_np[i], raw_advs_np[i], win_size=7, channel_axis=-1, data_range=1.0) for i in range(attack_images_np.shape[0])]
     ssim_score = np.mean(ssim_scores)

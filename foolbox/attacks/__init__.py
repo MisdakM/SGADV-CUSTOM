@@ -1,4 +1,4 @@
-from foolbox.attacks.atn import SimpleATN
+from foolbox.attacks.atn import SimpleAutoencoder
 from .base import Attack  # noqa: F401
 
 # FixedEpsilonAttack subclasses
@@ -80,5 +80,5 @@ FGSM = LinfFastGradientAttack
 L1PGD = L1ProjectedGradientDescentAttack
 L2PGD = L2ProjectedGradientDescentAttack
 LinfPGD = LinfProjectedGradientDescentAttack
-ATN = SimpleATN
+ATN = SimpleAutoencoder
 PGD = LinfPGD
