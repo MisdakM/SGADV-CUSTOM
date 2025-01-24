@@ -1,0 +1,5 @@
+samplesize = 10, subject = 2, source = lfw, target = CelebA-HQ, dfr_model = facenet, threshold = 0.7032619898135847
+attack_model = <class 'foolbox.attacks.projected_gradient_descent.LinfProjectedGradientDescentAttack'>, loss_type = ST, epsilons = 0.03, steps = 3, step_size = 0.001, convergence_threshold = 0.0001, batchsize = 20
+Attack costs 24.177661418914795s
+SSIM = 0.11148391664028168
+LPISP = 1.2818639278411865
