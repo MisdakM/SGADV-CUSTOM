@@ -87,7 +87,7 @@ def main() -> None:
         if i == ceil(totalsize / batchsize) - 1:
             batchsize = totalsize - batchsize * i
 
-        batch_images = attack_images[start:start + batchsize].raw.view(batchsize, -1).to(device)
+        batch_images = attack_images[start:start + batchsize].raw.reshape(batchsize, -1).to(device)
         batch_targets = target_features[start:start + batchsize].to(device)
 
         start_time = time.time()
