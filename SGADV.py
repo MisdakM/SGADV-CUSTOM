@@ -1,5 +1,6 @@
 # Targeted attack to face recognition system
 import eagerpy as ep
+import torch.nn as nn
 import codecs
 import time
 import torch
@@ -26,12 +27,20 @@ def main() -> None:
     target = "CelebA-HQ" # lfw, CelebA-HQ
     dfr_model = 'facenet' # facenet, insightface
     threshold = 0.7032619898135847 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
-    attack_model = attacks.LinfPGD
     loss_type = 'ST' #'ST', 'C-BCE'
     epsilons = 0.03
     steps = 1000
     step_size = 0.001
     convergence_threshold = 0.0001
+    
+    # attack_model = attacks.LinfPGD
+
+    # Initialize the ATN model
+    input_size = 3 * 112 * 112  # Assuming input images are 112x112 with 3 channels
+    atn_model = attacks.SimpleATN(input_size=input_size).to(device)
+    optimizer = torch.optim.Adam(atn_model.parameters(), lr=1e-3)
+    criterion = nn.MSELoss()  # Use MSE loss for simplicity
+
     
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     totalsize = samplesize*subject
@@ -68,27 +77,51 @@ def main() -> None:
     del source_images
     
     # Run attack
-    attack = attack_model(threshold=threshold, loss_type=loss_type, steps=steps, abs_stepsize=step_size, convergence_threshold=convergence_threshold, device=device)
     raw_advs = Tensor([]).to(device)
     advs_features = Tensor([]).to(device)
     time_cost = 0
-    for i in range(ceil(totalsize/batchsize)):
+
+    for i in range(ceil(totalsize / batchsize)):
         print(f"Batch: {i+1}")
-        start = i*batchsize
-        if i == ceil(totalsize/batchsize)-1:
-            batchsize = totalsize - batchsize*i
+        start = i * batchsize
+        if i == ceil(totalsize / batchsize) - 1:
+            batchsize = totalsize - batchsize * i
+
+        batch_images = attack_images[start:start + batchsize].raw.view(batchsize, -1).to(device)
+        batch_targets = target_features[start:start + batchsize].to(device)
 
         start_time = time.time()
-        raw_advs_tmp, _, _ = attack(fmodel, attack_images[start:start+batchsize], target_features[start:start+batchsize], epsilons=epsilons)
+        
+        # Train the ATN
+        atn_model.train()
+        for _ in range(steps):  # Train for a few iterations
+            optimizer.zero_grad()
+            perturbations = atn_model(batch_images)  # Generate perturbations
+            advs = batch_images + perturbations  # Add perturbations
+            advs = torch.clamp(advs, 0, 1)  # Ensure valid image values
+
+            # Calculate loss based on target features
+            advs_features = fmodel(advs.view(batchsize, 3, 112, 112))  # Reshape back to image format
+            loss = criterion(advs_features.raw, batch_targets)
+            loss.backward()
+            optimizer.step()
+        
         end_time = time.time()
-        
-        time_cost = time_cost + end_time - start_time
-        
-        advs_features_tmp = fmodel(raw_advs_tmp)
-        raw_advs = torch.cat((raw_advs, raw_advs_tmp.raw),0)
-        advs_features = torch.cat((advs_features, advs_features_tmp.raw),0)
-        
-        del raw_advs_tmp, advs_features_tmp
+        time_cost += end_time - start_time
+
+        # Evaluate adversarial examples
+        atn_model.eval()
+        with torch.no_grad():
+            perturbations = atn_model(batch_images)
+            advs = torch.clamp(batch_images + perturbations, 0, 1)
+            advs_features_tmp = fmodel(advs.view(batchsize, 3, 112, 112))  # Reshape to image format
+
+        raw_advs = torch.cat((raw_advs, advs), 0)
+        advs_features = torch.cat((advs_features, advs_features_tmp.raw), 0)
+
+        del advs_features_tmp
+
+    
     del attack, fmodel, model
     print(f"Attack costs {time_cost}s")
     f.write(f"Attack costs {time_cost}s\n")
