@@ -37,7 +37,7 @@ def main() -> None:
     totalsize = samplesize*subject
     batchsize = 20
     
-    # attack_model = attacks.LinfPGD
+    attack_model = attacks.LinfPGD # dummy attack model, for keeping logs intact
 
     # Initialize the ATN model
     input_size = 3 * 112 * 112  # Assuming input images are 112x112 with 3 channels
@@ -47,10 +47,10 @@ def main() -> None:
     
     
     # Log
-    # log_time = time.strftime("%Y%m%d%H%M%S",time.localtime())
-    # f = codecs.open(f'results/logs/{loss_type}_{source}_{target}_{dfr_model}_{attack_model.__module__}_{log_time}.txt','a','utf-8')
-    # f.write(f"samplesize = {samplesize}, subject = {subject}, source = {source}, target = {target}, dfr_model = {dfr_model}, threshold = {threshold}\n")
-    # f.write(f"attack_model = {attack_model}, loss_type = {loss_type}, epsilons = {epsilons}, steps = {steps}, step_size = {step_size}, convergence_threshold = {convergence_threshold}, batchsize = {batchsize}\n")
+    log_time = time.strftime("%Y%m%d%H%M%S",time.localtime())
+    f = codecs.open(f'results/logs/{loss_type}_{source}_{target}_{dfr_model}_{attack_model.__module__}_{log_time}.txt','a','utf-8')
+    f.write(f"samplesize = {samplesize}, subject = {subject}, source = {source}, target = {target}, dfr_model = {dfr_model}, threshold = {threshold}\n")
+    f.write(f"attack_model = {attack_model}, loss_type = {loss_type}, epsilons = {epsilons}, steps = {steps}, step_size = {step_size}, convergence_threshold = {convergence_threshold}, batchsize = {batchsize}\n")
     
     # Target Model
     if dfr_model=='insightface':
@@ -87,7 +87,7 @@ def main() -> None:
         if i == ceil(totalsize / batchsize) - 1:
             batchsize = totalsize - batchsize * i
 
-        batch_images = attack_images[start:start + batchsize].raw.reshape(batchsize, -1).to(device)
+        batch_images = attack_images[start:start + batchsize].raw.view(batchsize, -1).to(device)
         batch_targets = target_features[start:start + batchsize].to(device)
 
         start_time = time.time()
