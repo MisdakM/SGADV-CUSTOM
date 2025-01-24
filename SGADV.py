@@ -32,6 +32,10 @@ def main() -> None:
     steps = 1000
     step_size = 0.001
     convergence_threshold = 0.0001
+
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    totalsize = samplesize*subject
+    batchsize = 20
     
     # attack_model = attacks.LinfPGD
 
@@ -40,17 +44,13 @@ def main() -> None:
     atn_model = attacks.SimpleATN(input_size=input_size).to(device)
     optimizer = torch.optim.Adam(atn_model.parameters(), lr=1e-3)
     criterion = nn.MSELoss()  # Use MSE loss for simplicity
-
     
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    totalsize = samplesize*subject
-    batchsize = 20
     
     # Log
-    log_time = time.strftime("%Y%m%d%H%M%S",time.localtime())
-    f = codecs.open(f'results/logs/{loss_type}_{source}_{target}_{dfr_model}_{attack_model.__module__}_{log_time}.txt','a','utf-8')
-    f.write(f"samplesize = {samplesize}, subject = {subject}, source = {source}, target = {target}, dfr_model = {dfr_model}, threshold = {threshold}\n")
-    f.write(f"attack_model = {attack_model}, loss_type = {loss_type}, epsilons = {epsilons}, steps = {steps}, step_size = {step_size}, convergence_threshold = {convergence_threshold}, batchsize = {batchsize}\n")
+    # log_time = time.strftime("%Y%m%d%H%M%S",time.localtime())
+    # f = codecs.open(f'results/logs/{loss_type}_{source}_{target}_{dfr_model}_{attack_model.__module__}_{log_time}.txt','a','utf-8')
+    # f.write(f"samplesize = {samplesize}, subject = {subject}, source = {source}, target = {target}, dfr_model = {dfr_model}, threshold = {threshold}\n")
+    # f.write(f"attack_model = {attack_model}, loss_type = {loss_type}, epsilons = {epsilons}, steps = {steps}, step_size = {step_size}, convergence_threshold = {convergence_threshold}, batchsize = {batchsize}\n")
     
     # Target Model
     if dfr_model=='insightface':
