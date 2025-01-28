@@ -29,7 +29,7 @@ def main() -> None:
     threshold = 0.7032619898135847 # facenet: 0.7032619898135847; insightface: 0.5854403972629942
     loss_type = 'ST' #'ST', 'C-BCE'
     epsilons = 0.03
-    steps = 3
+    steps = 10
     step_size = 0.001
     convergence_threshold = 0.0001
 
@@ -81,6 +81,8 @@ def main() -> None:
     advs_features = Tensor([]).to(device)
     time_cost = 0
 
+    print(f"Total batches: {ceil(totalsize / batchsize)}")
+    
     for i in range(ceil(totalsize / batchsize)):
         print(f"Batch: {i+1}")
         start = i * batchsize
